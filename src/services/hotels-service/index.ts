@@ -1,4 +1,4 @@
-import { notFoundError } from "@/errors";
+import { notFoundError, paymentRequired } from "@/errors";
 import hotelRepository from "@/repositories/hotel-repository";
 import enrollmentRepository from "@/repositories/enrollment-repository";
 import ticketRepository from "@/repositories/ticket-repository";
@@ -20,8 +20,8 @@ async function getHotels(userId:number) {
     const isRemote = ticket.TicketType.isRemote;
     const includesHotel = ticket.TicketType.includesHotel;
 
-    if ( !ticket || isRemote || isReserved || !includesHotel ){
-        throw notFoundError();
+    if ( isRemote || isReserved || !includesHotel ){
+        throw paymentRequired();
     }
     const hotels = await hotelRepository.findHotels();
 
