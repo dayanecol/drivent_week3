@@ -5,7 +5,7 @@ import { TicketStatus } from "@prisma/client";
 import httpStatus from "http-status";
 import * as jwt from "jsonwebtoken";
 import supertest from "supertest";
-import { createEnrollmentWithAddress, createUser, createTicketType, createTicket } from "../factories";
+import { createEnrollmentWithAddress, createUser, createTicketType, createTicket, createPayment } from "../factories";
 import { cleanDb, generateValidToken } from "../helpers";
 import { createHotel } from "../factories/hotels-factory";
 
@@ -44,6 +44,7 @@ describe("GET /hotels", () => {
   });
 
   describe("when token is valid", () => {
+    
     it("should respond with status 404 when user doesnt have an enrollment yet", async () => {
       const user = await createUser();
       const token = await generateValidToken(user);
@@ -62,7 +63,7 @@ describe("GET /hotels", () => {
 
       expect(response.status).toEqual(httpStatus.NOT_FOUND);
     });
-    
+
     it("should respond with status 402 when user ticket is not paid yet ", async () => {
       const user = await createUser();
       const token = await generateValidToken(user);
@@ -113,6 +114,7 @@ describe("GET /hotels", () => {
       const includesHotel = true;
       const ticketType = await createTicketType(isRemote,includesHotel);
       const ticket = await createTicket(enrollment.id, ticketType.id, TicketStatus.PAID);
+      await createPayment(Number(ticket.id), ticketType.price);
 
       const createdHotel = await createHotel();
       const response = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
