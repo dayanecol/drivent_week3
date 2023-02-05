@@ -106,6 +106,25 @@ describe("GET /hotels", () => {
       expect(response.status).toEqual(httpStatus.PAYMENT_REQUIRED);
     });
 
+    it("should respond with status 200 when doesnt have a hotel yet ", async () => {
+      const user = await createUser();
+      const token = await generateValidToken(user);
+      const enrollment = await createEnrollmentWithAddress(user);
+      const isRemote = false;
+      const includesHotel = true;
+      const ticketType = await createTicketType(isRemote,includesHotel);
+      const ticket = await createTicket(Number(enrollment.id),Number(ticketType.id),TicketStatus.PAID);
+      await createPayment(Number(ticket.id), Number(ticketType.price));
+
+      const response = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toEqual(httpStatus.OK);
+      expect(response.body).toEqual([]);
+      console.log(response.body);
+      
+    });
+
+
     it("should respond with status 200 and with hotels data", async () => {
       const user = await createUser();
       const token = await generateValidToken(user);
@@ -118,6 +137,7 @@ describe("GET /hotels", () => {
 
       const createdHotel = await createHotel();
       const response = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
+      console.log(response.body);
 
       expect(response.status).toEqual(httpStatus.OK);
       expect(response.body).toEqual([{
