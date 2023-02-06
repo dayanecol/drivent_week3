@@ -1,5 +1,4 @@
 import app, { init } from "@/app";
-//import { prisma } from "@/config";
 import faker from "@faker-js/faker";
 import { TicketStatus } from "@prisma/client";
 import httpStatus from "http-status";
@@ -13,7 +12,19 @@ beforeAll(async () => {
   await init();
 });
 
+beforeAll (async () => {
+  await cleanDb();
+});
+
 beforeEach(async () => {
+  await cleanDb();
+});
+
+afterEach(async () => {
+  await cleanDb();
+});
+
+afterAll (async () => {
   await cleanDb();
 });
 
@@ -63,7 +74,7 @@ describe("GET /hotels", () => {
 
       expect(response.status).toEqual(httpStatus.NOT_FOUND);
     });
-
+    
     it("should respond with status 402 when user ticket is not paid yet ", async () => {
       const user = await createUser();
       const token = await generateValidToken(user);
@@ -106,6 +117,21 @@ describe("GET /hotels", () => {
 
       expect(response.status).toEqual(httpStatus.PAYMENT_REQUIRED);
     });
+
+    it("should respond with status 200 when doesnt have a hotel yet ", async () => {
+      const user = await createUser();
+      const token = await generateValidToken(user);
+      const enrollment = await createEnrollmentWithAddress(user);
+      const isRemote = false;
+      const includesHotel = true;
+      const ticketType = await createTicketType(isRemote,includesHotel);
+      const ticket = await createTicket(Number(enrollment.id),Number(ticketType.id),TicketStatus.PAID);
+      await createPayment(Number(ticket.id), Number(ticketType.price));
+
+      const response = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
+      expect(response.status).toEqual(httpStatus.OK);
+      expect(response.body).toEqual([]);
+    });    
 
     it("should respond with status 200 and with hotels data", async () => {
       const user = await createUser();
