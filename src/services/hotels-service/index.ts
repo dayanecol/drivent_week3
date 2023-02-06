@@ -43,8 +43,8 @@ async function getHotelById(hotelId: number, userId:number) {
     const isRemote = ticket.TicketType.isRemote;
     const includesHotel = ticket.TicketType.includesHotel;
 
-    if ( !ticket || isRemote || isReserved || !includesHotel ){
-        throw notFoundError();
+    if ( isRemote || isReserved || !includesHotel ){
+        throw paymentRequired();
     }
 
     const rooms = await hotelRepository.findHotelById(hotelId);
