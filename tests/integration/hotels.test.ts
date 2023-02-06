@@ -85,7 +85,8 @@ describe("GET /hotels", () => {
       const isRemote = true;
       const includesHotel = true;
       const ticketType = await createTicketType(isRemote, includesHotel);
-      await createTicket(Number(enrollment.id),Number(ticketType.id),TicketStatus.PAID);
+      const ticket = await createTicket(Number(enrollment.id),Number(ticketType.id),TicketStatus.PAID);
+      await createPayment(Number(ticket.id), Number(ticketType.price));
 
       const response = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
 
@@ -99,14 +100,14 @@ describe("GET /hotels", () => {
       const isRemote = false;
       const includesHotel = false;
       const ticketType = await createTicketType(isRemote,includesHotel);
-      await createTicket(Number(enrollment.id),Number(ticketType.id),TicketStatus.PAID);
+      const ticket = await createTicket(Number(enrollment.id),Number(ticketType.id),TicketStatus.PAID);
 
       const response = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
 
       expect(response.status).toEqual(httpStatus.PAYMENT_REQUIRED);
     });
 
-    it("should respond with status 200 when doesnt have a hotel yet ", async () => {
+    it("should respond with status 200 and with hotels data", async () => {
       const user = await createUser();
       const token = await generateValidToken(user);
       const enrollment = await createEnrollmentWithAddress(user);
@@ -116,29 +117,8 @@ describe("GET /hotels", () => {
       const ticket = await createTicket(Number(enrollment.id),Number(ticketType.id),TicketStatus.PAID);
       await createPayment(Number(ticket.id), Number(ticketType.price));
 
-      const response = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
-
-      expect(response.status).toEqual(httpStatus.OK);
-      expect(response.body).toEqual([]);
-      console.log(response.body);
-      
-    });
-
-
-    it("should respond with status 200 and with hotels data", async () => {
-      const user = await createUser();
-      const token = await generateValidToken(user);
-      const enrollment = await createEnrollmentWithAddress(user);
-      const isRemote = false;
-      const includesHotel = true;
-      const ticketType = await createTicketType(isRemote,includesHotel);
-      const ticket = await createTicket(enrollment.id, ticketType.id, TicketStatus.PAID);
-      await createPayment(Number(ticket.id), ticketType.price);
-
       const hotel = await createHotel();
       const response = await server.get("/hotels").set("Authorization", `Bearer ${token}`);
-      console.log(response.body);
-
       expect(response.status).toEqual(httpStatus.OK);
       expect(response.body).toEqual([{
         id: hotel.id,
@@ -204,7 +184,8 @@ describe("GET /hotels/:hotelId", () => {
       const isRemote = false;
       const includesHotel = true;
       const ticketType = await createTicketType(isRemote,includesHotel);
-      await createTicket(enrollment.id, ticketType.id, TicketStatus.PAID);
+      const ticket = await createTicket(enrollment.id, ticketType.id, TicketStatus.PAID);
+      await createPayment(Number(ticket.id), Number(ticketType.price));
       
       const response = await server.get("/hotels/0").set("Authorization", `Bearer ${token}`);
       expect(response.status).toBe(httpStatus.NOT_FOUND);
@@ -260,13 +241,11 @@ describe("GET /hotels/:hotelId", () => {
       const includesHotel = true;
       const ticketType = await createTicketType(isRemote,includesHotel);
       const ticket = await createTicket(enrollment.id, ticketType.id, TicketStatus.PAID);
-      await createPayment(Number(ticket.id), ticketType.price);
+      await createPayment(Number(ticket.id), Number(ticketType.price));
 
       const hotel = await createHotel();
       const hotelRooms = await createHotelRoom(hotel.id);
       const response = await server.get(`/hotels/${hotel.id}`).set("Authorization", `Bearer ${token}`);
-      console.log(response.body);
-
       expect(response.status).toEqual(httpStatus.OK);
       expect(response.body).toEqual({
         id: hotel.id,
